@@ -5,7 +5,7 @@ require 'json'
 class CLI
   class << self
     def listen
-      monsters = ARGV.map.with_index { |name, rank| Monster.new(name, rank) }
+      monsters = ARGV.map { |name| Monster.new(name, 0) }
       BattleField.play(monsters)
     end
   end
@@ -26,11 +26,11 @@ class BattleField
           break if rival(monster, field).nil?
 
           result = get_battle_result_as_api(monster.name, rival(monster, field).name)
-          monster.win?(result) ? revel_up(monster, field) : revel_down(monster, field)
+          monster.win?(result) ? give_point(monster, field) : take_point(monster, field)
         end
-        field.monsters = field.monsters.sort_by(&:rank)
+        field.monsters = field.monsters.sort_by(&:point).reverse
       end
-      puts field.monsters.map(&:name)
+      field.monsters.map(&:name)
     end
 
     private
@@ -46,36 +46,36 @@ class BattleField
       field.monsters[index]
     end
 
-    def revel_up(monster, field)
-      monster.be_strong
-      rival(monster, field).be_weak
+    def give_point(monster, field)
+      monster.level_up
+      rival(monster, field).level_down
     end
 
-    def revel_down(monster, field)
-      monster.be_weak
-      rival(monster, field).be_strong
+    def take_point(monster, field)
+      monster.level_down
+      rival(monster, field).level_up
     end
   end
 end
 
 class Monster
-  attr_accessor :name, :rank
+  attr_accessor :name, :point
 
-  def initialize(name, rank)
+  def initialize(name, point)
     @name = name
-    @rank = rank
+    @point = point
   end
 
-  def be_strong
-    self.rank -= 1
+  def level_up
+    self.point += 1
   end
 
-  def be_weak
-    self.rank += 1
+  def level_down
+    self.point -= 1
   end
 
   def <=>(other)
-    rank <=> other.rank
+    point <=> other.point
   end
 
   def win?(result)
@@ -83,4 +83,4 @@ class Monster
   end
 end
 
-CLI.listen
+# CLI.listen
